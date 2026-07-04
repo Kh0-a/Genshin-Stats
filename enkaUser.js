@@ -168,7 +168,7 @@ async function syncGenshinStats() {
             {
                 type: 1,
                 name: "uid",
-                value: `UID ${process.env.GENSHIN_UID}`
+                value: `${process.env.GENSHIN_UID}`
             },
 
             {
