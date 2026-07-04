@@ -1,3 +1,12 @@
+require('dotenv').config();
+const axios = require('axios');
+
+const ENKA_URL = `https://enka.network/api/uid/${process.env.GENSHIN_UID}?info`;
+
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID; 
+const DISCORD_USER_ID = process.env.DISCORD_USER_ID;
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN; 
+
 async function syncGenshinStats() {
     try {
         const enkaResponse = await axios.get(ENKA_URL);
@@ -169,3 +178,5 @@ async function syncGenshinStats() {
         }
     }
 }
+
+syncGenshinStats();
