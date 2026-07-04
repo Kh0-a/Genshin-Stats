@@ -8,6 +8,7 @@ const ENKA_URL = `https://enka.network/api/uid/${process.env.GENSHIN_UID}?info`;
 // Official Enka mappings (maintained by Enka.Network, auto-updates for new characters)
 const CHARACTERS_MAP_URL = "https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/characters.json";
 const PFPS_MAP_URL = "https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/pfps.json";
+const LOC_MAP_URL = "https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/loc.json";
 const ENKA_UI_BASE = "https://enka.network/ui/";
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID; 
@@ -19,9 +20,9 @@ const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const ROTATE_HOURS = Number(process.env.ROTATE_HOURS ?? 6);
 
 // =====================
-// CHARACTER IMAGE
+// SHOWCASED CHARACTER (image + name)
 // =====================
-async function getCharacterImageUrl(player) {
+async function getShowcasedCharacter(player) {
     try {
         // Rotate through the showcase: pick a different character every ROTATE_HOURS.
         // Time-based, so no state file is needed — each scheduled run lands on the next slot.
@@ -60,8 +61,21 @@ async function getCharacterImageUrl(player) {
                     iconName = charData.SideIconName.replace("_Side", "");
                 }
 
+                // Resolve the character's display name from Enka's localization map
+                let name = null;
+                try {
+                    const { data: loc } = await axios.get(LOC_MAP_URL, { timeout: 10000 });
+                    name = loc.en?.[String(charData.NameTextMapHash)] ?? null;
+                } catch {
+                    // name is optional — image alone is still fine
+                }
+
                 if (iconName) {
-                    return `${ENKA_UI_BASE}${iconName}.png`;
+                    return {
+                        imageUrl: `${ENKA_UI_BASE}${iconName}.png`,
+                        name,
+                        level: showcased.level ?? null
+                    };
                 }
             }
         }
@@ -72,14 +86,18 @@ async function getCharacterImageUrl(player) {
             const { data: pfps } = await axios.get(PFPS_MAP_URL, { timeout: 10000 });
             const iconPath = pfps[String(pfpId)]?.iconPath;
             if (iconPath) {
-                return `${ENKA_UI_BASE}${iconPath}.png`;
+                return {
+                    imageUrl: `${ENKA_UI_BASE}${iconPath}.png`,
+                    name: null,
+                    level: null
+                };
             }
         }
 
-        return null;
+        return { imageUrl: null, name: null, level: null };
     } catch (err) {
         console.warn("⚠️ Could not resolve character image:", err.message);
-        return null;
+        return { imageUrl: null, name: null, level: null };
     }
 }
 
@@ -127,12 +145,21 @@ async function syncGenshinStats() {
                 ? `"${player.signature.substring(0, 60)}"`
                 : "\"No signature\"";
 
-        // Resolve the showcased character's image
-        const imageUrl = await getCharacterImageUrl(player);
+        // Resolve the showcased character (image + name)
+        const character = await getShowcasedCharacter(player);
+        const { imageUrl } = character;
+
+        const characterLabel = character.name
+            ? `${character.name}${character.level ? ` • Lv. ${character.level}` : ""}`
+            : null;
+
         if (imageUrl) {
             console.log(`🖼️ Character image: ${imageUrl}`);
         } else {
             console.log("🖼️ No character image found (empty showcase?)");
+        }
+        if (characterLabel) {
+            console.log(`🏷️ Character: ${characterLabel}`);
         }
 
         const dynamic = [
@@ -244,6 +271,16 @@ async function syncGenshinStats() {
                 value: {
                     url: imageUrl
                 }
+            });
+        }
+
+        // Character name label, e.g. "Beidou • Lv. 60"
+        // Bind a text element to "char" in your widget design to display it.
+        if (characterLabel) {
+            dynamic.push({
+                type: 1,
+                name: "char",
+                value: characterLabel
             });
         }
 
