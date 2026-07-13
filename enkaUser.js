@@ -11,7 +11,6 @@ const axios = require('axios');
 if (process.env.GITHUB_ACTIONS !== "true") {
     require("dotenv").config();
 }
-const axios = require('axios');
 
 const ENKA_URL = `https://enka.network/api/uid/${process.env.GENSHIN_UID}?info`;
 
