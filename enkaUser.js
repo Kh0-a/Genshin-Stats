@@ -1,6 +1,16 @@
 if (process.env.GITHUB_ACTIONS !== "true") {
     require("dotenv").config();
 }
+console.log("🚀 Script starting...");
+console.log("GENSHIN_UID set:", !!process.env.GENSHIN_UID);
+console.log("DISCORD_CLIENT_ID set:", !!process.env.DISCORD_CLIENT_ID);
+console.log("DISCORD_USER_ID set:", !!process.env.DISCORD_USER_ID);
+console.log("DISCORD_BOT_TOKEN set:", !!process.env.DISCORD_BOT_TOKEN);
+
+const axios = require('axios');
+if (process.env.GITHUB_ACTIONS !== "true") {
+    require("dotenv").config();
+}
 const axios = require('axios');
 
 const ENKA_URL = `https://enka.network/api/uid/${process.env.GENSHIN_UID}?info`;
@@ -316,3 +326,8 @@ async function syncGenshinStats() {
 }
 
 syncGenshinStats();
+
+syncGenshinStats().catch(err => {
+    console.error("❌ Uncaught error:", err);
+    process.exit(1);
+});
